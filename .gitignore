@@ -1,6 +1,7 @@
 release/
 targets/
-targets-backup/
+__pycache__/
+patch/__pycache__
 .idea
 *.iml
 *.ipr

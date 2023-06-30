@@ -1,20 +1,15 @@
-# OpenStreamCaster's FFmpeg Builder
+# <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/FFmpeg_icon.svg/480px-FFmpeg_icon.svg.png" width="35px"> FFmpeg Builder
 
+## About
 Build FFmpeg from scratch with Python!
 
-We already have a bunch of scripts like this. This work is inspired by [ffmpeg-build-script](https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg): Markus did a great job on gathering requirements for multiple components. But I can't use it because of Bash. Bash is a real shit: fragile syntax, no debug, no IDE, no error reporting, nothing. Therefore, it's time to build something similar with a real programming language. So who's your daddy now? :3
-
-![](https://media1.giphy.com/media/1zhaZh6c3Nz8EVloEV/giphy.gif?cid=ecf05e47912d291200f43284c8d79f1c18b59aaa84f99101&rid=giphy.gif)
+This work is inspired by [ffmpeg-build-script](https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg). Markus did a great job on gathering requirements for multiple components. But I can't use it because of Bash. Bash is a real shit: fragile syntax, no debug, no IDE, no error reporting.
 
 ## Usage
 
 * Build:`python3 ./ffmpeg-builder.py --build` and follow on-screen instructions
 * Clean:`python3 ./ffmpeg-builder.py --clean`
 * Help:`python3 ./ffmpeg-builder.py --help`
-
-## Patches
-
-- TODO: Facebook livestreaming
 
 ## Operating systems
 
@@ -36,8 +31,6 @@ Nonetheless, here are the steps to build:
 ## Platforms
 
 - Python 3 (tested on Python 3.8.2, a default version on Ubuntu 20.04)
-- TODO: Docker image
-- TODO: Ansible Plugin
 
 ## License
 

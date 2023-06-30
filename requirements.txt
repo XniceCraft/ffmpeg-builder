@@ -1,4 +1,3 @@
 plumbum
-psutil
 meson
 ninja
