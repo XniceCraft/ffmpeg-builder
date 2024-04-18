@@ -1,10 +1,18 @@
-from typing import Union
+"""
+Manage the needed library and provide library interface
+"""
+
 import importlib
 import os.path
+from typing import Dict, Optional
 from options import Options
 
 
 class Library:
+    """
+    Interface for library
+    """
+
     def __init__(self, name: str, lib_data: dict, options: Options, module_data=None):
         self.__lib_data = lib_data
         self.__module_data = module_data
@@ -23,7 +31,7 @@ class Library:
         return self.__lib_data.get("configuration", "configure")
 
     @property
-    def configure_params(self) -> list:
+    def configure_params(self) -> List[Optional[str]]:
         """
         Return configuration parameters
 
@@ -34,7 +42,7 @@ class Library:
         return self.__lib_data.get("configure_params", [])
 
     @property
-    def dependencies(self) -> list:
+    def dependencies(self) -> List[Optional[str]]:
         """
         Return library dependencies
 
@@ -45,7 +53,7 @@ class Library:
         return self.__lib_data.get("dependencies", [])
 
     @property
-    def download_params(self) -> list:
+    def download_params(self) -> List[Optional[str]]:
         """
         Return download parameters
 
@@ -164,7 +172,7 @@ class Library:
 
     def pre_dependency(self):
         """
-        Preconfigure patch
+        Pre dependency patch
         """
         if not hasattr(self.__module_data, "pre_dependency"):
             return
@@ -215,11 +223,7 @@ class Library:
         -------
         bool
         """
-        if self.name not in self.__options.targets:
-            return False
-        if self.is_already_build():
-            return False
-        return True
+        return self.name in self.__options.targets and not self.is_already_build()
 
     def mark_as_built(self) -> None:
         """
@@ -236,31 +240,30 @@ class Library:
 
 class LibraryManager:
     """
-    Manage build library
+    Manage needed library
     """
 
     def __init__(self, library_data: dict, options: Options):
-        self.__library = {}
-        for lib in library_data:
+        self._library: Dict[str, Library] = {}
+        for lib, data in library_data.items():
             module_name = lib.replace("-", "_")
-            patch = None
-            if os.path.isfile(f"patch/{module_name}.py"):
-                patch = importlib.import_module(f"patch.{module_name}")
-            self.__library[lib] = Library(lib, library_data[lib], options, patch)
+            patch = (
+                importlib.import_module(f"libraries.{module_name}")
+                if os.path.isfile(f"libraries/{module_name}.py")
+                else None
+            )
+            self._library[lib] = Library(lib, data, options, patch)
 
-    def get_library(self, lib_name: str) -> Union[None, Library]:
-        """_summary_
-
+    def get_library(self, name: str) -> Optional[Library]:
+        """
         Parameters
         ----------
-        lib_name : str
+        name : str
             Library name
 
         Returns
         -------
-        None
-            If library not found
-        Library
+        Optional[Library]
             Library class
         """
-        return self.__library.get(lib_name)
+        return self._library.get(name)

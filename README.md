@@ -5,11 +5,13 @@ Build FFmpeg from scratch with Python!
 
 This work is inspired by [ffmpeg-build-script](https://github.com/markus-perl/ffmpeg-build-script/blob/master/build-ffmpeg). Markus did a great job on gathering requirements for multiple components. But I can't use it because of Bash. Bash is a real shit: fragile syntax, no debug, no IDE, no error reporting.
 
+Forked from https://github.com/openstreamcaster/ffmpeg-builder
+
 ## Usage
 
-* Build:`python3 ./ffmpeg-builder.py --build` and follow on-screen instructions
-* Clean:`python3 ./ffmpeg-builder.py --clean`
-* Help:`python3 ./ffmpeg-builder.py --help`
+* Build:`python3 build.py --build`
+* Clean:`python3 build.py --clean`
+* Help:`python3 build.py --help`
 
 ## Operating systems
 
@@ -26,11 +28,7 @@ Nonetheless, here are the steps to build:
 1) [Install MSYS2](https://www.msys2.org/). It's like ArchLinux, but with Windows Kernel. Follow all steps, update everything as the page says.
 2) Cast this magic spell to set up environment: `pacman -S --needed base-devel mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain mingw-w64-i686-cmake mingw-w64-x86_64-cmake mingw-w64-x86_64-llvm mingw-w64-x86_64-clang`
 3) Install Python `pacman -S python3 mingw-w64-x86_64-python3-pip` and run `pip3 install plumbum`
-4) Run `python3 ./ffmpeg-builder.py --build` as usual and pray your gods.
-
-## Platforms
-
-- Python 3 (tested on Python 3.8.2, a default version on Ubuntu 20.04)
+4) Run `python3 build.py --build` as usual and pray your gods.
 
 ## License
 
