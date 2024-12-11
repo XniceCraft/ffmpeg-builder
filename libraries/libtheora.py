@@ -8,7 +8,7 @@ def pre_configure(ctx, options: Options):
     """
     Pre configuration build patch
     """
-    file_utils.replace("configure", "-fforce-add", "")
+    file_utils.replace("configure", "-fforce-addr", "")
     run_fg("chmod", "+x", "configure")
     ctx.add_configuration_params(
         f"--with-ogg-libraries={options.release_dir}/lib",

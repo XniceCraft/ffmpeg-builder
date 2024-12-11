@@ -2,9 +2,10 @@
 Manage the needed library and provide library interface
 """
 
+from typing import Dict, List, Optional, Union
 import importlib
+import json
 import os.path
-from typing import Dict, Optional
 from options import Options
 
 
@@ -242,19 +243,33 @@ class LibraryManager:
     """
     Manage needed library
     """
+    data: Dict[str, Library] = {}
 
-    def __init__(self, library_data: dict, options: Options):
-        self._library: Dict[str, Library] = {}
-        for lib, data in library_data.items():
+    @classmethod
+    def init(cls, options: Options):
+        """Initialize the manager
+
+        Parameters
+        ----------
+        library_data : dict
+            Library Data
+        options : Options
+            Options
+        """
+        with open("libraries.json", encoding="utf-8") as file:
+            lib_data: Dict[str, Dict[str, Union[list, str]]] = json.load(file)
+
+        for lib, data in lib_data.items():
             module_name = lib.replace("-", "_")
             patch = (
                 importlib.import_module(f"libraries.{module_name}")
                 if os.path.isfile(f"libraries/{module_name}.py")
                 else None
             )
-            self._library[lib] = Library(lib, data, options, patch)
+            cls.data[lib] = Library(lib, data, options, patch)
 
-    def get_library(self, name: str) -> Optional[Library]:
+    @classmethod
+    def get_library(cls, name: str) -> Optional[Library]:
         """
         Parameters
         ----------
@@ -266,4 +281,4 @@ class LibraryManager:
         Optional[Library]
             Library class
         """
-        return self._library.get(name)
+        return cls.data.get(name)

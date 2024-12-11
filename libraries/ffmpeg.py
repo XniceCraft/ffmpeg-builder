@@ -30,8 +30,6 @@ def add_library(ctx, lib_name: str) -> None:
             "--enable-libopencore_amrnb", "--enable-libopencore_amrwb"
         )
         return
-    if lib_name == "libvmaf":
-        ctx.add_configuration_params("--ld=g++")
     ctx.add_configuration_params(f"--enable-{lib_name}")
 
 
@@ -47,11 +45,10 @@ def pre_configure(ctx, options: Options):
         Build data
     """
     extra_cflags = " -static -static-libstdc++ -static-libgcc " if options.static_ffmpeg else ""
-    extra_ldflags = " -static -static-libstdc++ -static-libgcc " if options.static_ffmpeg else ""
     ctx.add_configuration_params(
         f"--pkgconfigdir={options.release_dir}/lib/pkgconfig",
         f"--extra-cflags=-I{options.release_dir}/include {extra_cflags}",
-        f"--extra-ldflags=-L{options.release_dir}/lib -fstack-protector {extra_ldflags}",
+        f"--extra-ldflags=-L{options.release_dir}/lib -fstack-protector ",
     )
     if options.static_ffmpeg:
         ctx.add_configuration_params(

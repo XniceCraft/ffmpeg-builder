@@ -1,6 +1,35 @@
 # pylint: disable=invalid-name, line-too-long, missing-module-docstring
+from argparse import ArgumentParser
 from typing import Optional, Iterable
+from time import sleep
+from zipfile import ZipFile
+import os.path
+import platform
+import shlex
+import sys
+from file_utils import mkdir, remove
+from library_manager import LibraryManager
 from options import Options
+
+try:
+    from build_utils import (
+        add_path,
+        cmake,
+        command_exists,
+        run_fg,
+        make,
+        make_install,
+        ninja,
+        require_commands,
+        path_fixer,
+        configure,
+        meson,
+    )
+    from plumbum import local
+except ModuleNotFoundError:
+    print("Install required module with `pip install -r requirements.txt`")
+    sys.exit(1)
+
 
 # Set up constants
 DOWNLOAD_RETRY_DELAY = 3
@@ -112,10 +141,9 @@ class Builder:
     Class to build ffmpeg
     """
 
-    def __init__(self, library_data: dict, options: Options):
+    def __init__(self, options: Options):
         self._options = options
         self._old_ldflags = None
-        self.__library_mgr = LibraryManager(library_data, options)
         self.__dir_data = {
             "target_dir": path_fixer(options.target_dir),
             "release_dir": path_fixer(options.release_dir),
@@ -124,6 +152,9 @@ class Builder:
                 os.path.join(options.release_dir, "lib", "pkgconfig")
             ),
         }
+
+        self.__library_mgr = LibraryManager()
+        self.__library_mgr.init(options)
 
         ffmpeg_obj = self.__library_mgr.get_library("ffmpeg")
         if self.is_mac:
@@ -314,11 +345,6 @@ class Builder:
             "Enable it temporary in the command line by running: "
             f"export PATH={self.release_dir}/bin:$PATH",
         )
-        print_block(
-            "And finally. Don't trust the build. Anything in the script output may be a lie.",
-            "Always check what you're doing and run test suite.",
-            "If you don't have one, ask for professional help.",
-        )
 
     def download(self, url: str, dest_name: str, alternative_dir: Optional[str] = None):
         """
@@ -350,7 +376,9 @@ class Builder:
             if run_fg("curl", "--insecure", "-L", "--silent", "-o", base_path, url):
                 successful_download = True
                 break
-            print(f"Downloading failed: {url}. Retrying in {DOWNLOAD_RETRY_DELAY} seconds")
+            print(
+                f"Downloading failed: {url}. Retrying in {DOWNLOAD_RETRY_DELAY} seconds"
+            )
             sleep(DOWNLOAD_RETRY_DELAY)
 
         if not successful_download:
@@ -365,7 +393,7 @@ class Builder:
                 path_fixer(base_path),
                 "-C",
                 path_fixer(download_path),
-                silent=True
+                silent=True,
             ):
                 return
             print(f"Failed to extract {dest_name}")
@@ -380,12 +408,8 @@ class Builder:
 def main() -> None:
     """
     Program Entry Point
-
-    Returns
-    -------
-    None
     """
-    parser = ArgumentParser(description="Build a special edition of FFMPEG.")
+    parser = ArgumentParser(description="Build your own FFmpeg")
     parser.add_argument(
         "-j",
         "--jobs",
@@ -400,7 +424,11 @@ def main() -> None:
         "-b", "--build", action="store_true", dest="build_mode", help="Run build"
     )
     parser.add_argument(
-        "-c", "--clean", action="store_true", dest="clean_mode", help="Clean solution"
+        "-c",
+        "--clean",
+        action="store_true",
+        dest="clean_mode",
+        help="Clean build temp file",
     )
     parser.add_argument(
         "-q",
@@ -413,7 +441,7 @@ def main() -> None:
         "--targets",
         action="store",
         dest="targets",
-        help="comma-separated targets for building (empty = build all)",
+        help="Comma-separated targets for building (empty = build all)",
     )
     parser.add_argument(
         "--exclude-targets",
@@ -471,7 +499,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--use-nonfree-libs",
-        dest="slavery_mode",
+        dest="nonfree",
         action="store_true",
         help="Use non-free libraries",
         default=False,
@@ -481,7 +509,7 @@ def main() -> None:
         dest="default_tools",
         action="store_true",
         help="Use cmake, nasm, yasm, pkg-config that installed on system",
-        default=False,
+        default=True,
     )
     args = parser.parse_args()
 
@@ -546,25 +574,25 @@ def main() -> None:
         if args.default_tools
         else targets
     )
-    if not args.slavery_mode:
+    if not args.nonfree:
         for target in ("libfdk-aac", "openssl"):
             if target in targets:
                 targets.remove(target)
-    elif args.slavery_mode:
+
+    elif args.nonfree:
         if "gnutls" in targets:
             targets.remove("gnutls")
+
     if args.disable_ffplay and "libsdl" in targets:
         targets.remove("libsdl")
+
     if any(_ in targets for _ in ("libopenh264", "libdav1d")):
-        if not bool(command_exists("meson") and command_exists("ninja")):
-            print("In order to build libopenh264 or libdav1d, you must install meson and ninja in your system")
+        if not (bool(command_exists("meson") and command_exists("ninja"))):
+            print(
+                "In order to build libopenh264 or libdav1d, you must install meson and ninja in your system"
+            )
             sys.exit(1)
 
-    print_block(
-        "Hello, slave, how are you?"
-        if args.slavery_mode
-        else "Building FFmpeg, free as in freedom!"
-    )
     print_header("Processing targets:")
     print_block(str(targets))
 
@@ -578,9 +606,6 @@ def main() -> None:
             "tar",
             *["cmake", "nasm", "yasm", "pkg-config"] if args.default_tools else [],
         )
-        with open("libraries.json", encoding="utf-8") as f:
-            lib_data = json.load(f)
-            f.close()
         opts = Options(
             targets=targets,
             threads=args.jobs,
@@ -592,46 +617,15 @@ def main() -> None:
             extra_libs=args.extra_libs,
             extra_ffmpeg_args=args.ffmpeg_args,
             static_ffmpeg=args.static_ffmpeg,
-            nonfree_build=args.slavery_mode,
+            nonfree_build=args.nonfree,
         )
-        Builder(lib_data, opts).build()
+        Builder(opts).build()
 
     if args.clean_mode:
         clean_all(args.target_dir, args.release_dir)
 
-    print(
-        "OpenStreamCaster's FFmpeg-builder finished its work. And you?\nSee help for more information"
-    )
+    print("FFmpeg build success")
 
 
 if __name__ == "__main__":
-    import json
-    import os.path
-    import platform
-    import shlex
-    import sys
-    from time import sleep
-    from zipfile import ZipFile
-    from argparse import ArgumentParser
-    from file_utils import mkdir, remove
-    from library_manager import LibraryManager
-
-    try:
-        from build_utils import (
-            add_path,
-            cmake,
-            command_exists,
-            run_fg,
-            make,
-            make_install,
-            ninja,
-            require_commands,
-            path_fixer,
-            configure,
-            meson,
-        )
-        from plumbum import local
-    except ModuleNotFoundError:
-        print("Install required module with `pip install -r requirements.txt`")
-        sys.exit(1)
     main()

@@ -16,5 +16,5 @@ def post_install(options: Options):
     file_utils.replace(
         f"{options.release_dir}/lib/pkgconfig/libgme.pc",
         "Libs.private: -lstdc++ -lz",
-        "Libs.private: -lstdc++ -lz -lubsan -ldl -lrt",
+        "Libs.private: -lubsan -lstdc++ -lz -ldl -lrt",
     )
